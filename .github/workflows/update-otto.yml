@@ -1,0 +1,53 @@
+name: Update OTTO Cask
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update Cask
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release="$(curl -fsSL https://api.github.com/repos/ottoappmac/otto/releases/latest)"
+          version="$(jq -r '.tag_name | ltrimstr("v")' <<< "$release")"
+          asset="OTTO_${version}_aarch64.dmg"
+          digest="$(jq -r --arg name "$asset" '.assets[] | select(.name == $name) | .digest // empty' <<< "$release" | sed 's/^sha256://')"
+
+          test -n "$version"
+          test -n "$digest"
+
+          python3 - "$version" "$digest" <<'PY'
+          import sys
+          from pathlib import Path
+
+          version, digest = sys.argv[1], sys.argv[2]
+          p = Path("Casks/o/otto.rb")
+          s = p.read_text()
+          import re
+          s = re.sub(r'version "[^"]+"', f'version "{version}"', s, count=1)
+          s = re.sub(r'sha256 "[^"]+"', f'sha256 "{digest}"', s, count=1)
+          p.write_text(s)
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "OTTO is already current."
+            exit 0
+          fi
+
+          git add Casks/o/otto.rb
+          git commit -m "otto $version"
+          git push
