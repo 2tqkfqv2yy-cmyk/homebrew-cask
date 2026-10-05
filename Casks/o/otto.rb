@@ -1,6 +1,6 @@
 cask "otto" do
-  version "1.13.0"
-  sha256 "8a013ea6bd39aaab3d3b39ea17b7237101eb1c31ef579e16f955ee24fbc479f0"
+  version "1.13.1"
+  sha256 "0c81fa5698abde360764d57b9785a27374ca13e93cda1ecdcdac0f3140bef344"
 
   url "https://github.com/ottoappmac/otto/releases/download/v1.12.5/OTTO_1.12.5_aarch64.dmg"
 
